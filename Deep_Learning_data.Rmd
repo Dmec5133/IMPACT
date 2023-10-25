@@ -1,0 +1,255 @@
+
+---
+title: "deep_learning_data"
+author: '480357135'
+date: '2022-07-21'
+output: html_document
+---
+
+```{r}
+# w1w1 <- read.csv("data/outer/raW1/raW1.csv")
+# fine_samps <- append(fine_samps, "Phylum")
+# w1_filtered <- w1w1 %>% dplyr::filter(X %in% fine_samps)
+# write.csv(w1_filtered, "./data/outer/raW1/raW1.csv", row.names = TRUE)
+```
+
+
+
+```{r, echo=FALSE, warning=F, message=FALSE}
+#library(CPOP)
+library(phyloseq)
+library(stringr)
+library(plyr); library(dplyr)
+library(ggplot2); library(magrittr); library(ggfortify) ;require(reshape2)
+suppressWarnings({suppressMessages({library(PD16Sdata)
+                  library(tidyverse)
+                  library(vegan)
+                  library(kableExtra)
+                  library(knitr)
+                  library(RColorBrewer)
+                  library(glmnet)
+                  library(ggplot2)
+                  library(caTools)
+                  library(e1071)
+                  library(caret)
+                  library(ggplot2)
+                  library(readxl)
+                  library(plotly)
+                  library(MASS) ; library(plsdof) ; library(caret) ; library(boot); library(robustbase) ; library(randomForest)
+      }
+    )
+  }
+)
+options(scipen = 999, digits=2)
+```
+
+
+
+
+
+
+
+
+```{r}
+source("data_scripts.R")
+path2 <- ".\\data\\outer2"
+
+```
+
+```{r}
+seq_spec <- read.csv("Species_Sequence2.csv", row.names=1)
+#seq_spec$Species  <- gsub(" ", "&", seq_spec$Species)
+#seq_spec$Species  <- gsub("_", "&", seq_spec$Species)
+lub_species <- add_species(seq_spec, ps_list$Lubomski)
+w1_species <- add_species(seq_spec, ps_list$Wallen1)
+w2_species <- add_species(seq_spec, ps_list$Wallen2)
+jin_species <- add_species(seq_spec, ps_list$Jin)
+schep_species <- add_species(seq_spec, ps_list$Scheperjans)
+aho_species <- add_species(seq_spec, ps_list$Aho)
+hb_species <- add_species(seq_spec, ps_list$`Hill-Burns`)
+ws_species <- add_species(seq_spec, ps_list$Weils)
+```
+
+
+```{r, warning=FALSE}
+prev1_lub <- prev.fam2(lub_species,0.0, 'Species')
+#wal1
+prev1_w1 <- prev.fam2(w1_species,0.0, 'Species')
+#wal2q
+prev1_w2 <- prev.fam2(w2_species,0.0, 'Species')
+#hb
+prev1_hb <- prev.fam2(hb_species ,0.0, 'Species')
+#jin
+prev1_jin <- prev.fam2(jin_species,0.0, 'Species')
+#schep
+prev1_schep <- prev.fam2(schep_species,0.0, 'Species')
+#weils
+#prev1_ws <- prev.fam2(ws_species,0, 'Species')
+#aho
+prev1_aho <- prev.fam2(aho_species,0.0, 'Species')
+
+
+```
+
+
+
+
+```{r, warning=FALSE}
+library(openxlsx)
+none1_lub <- asin.dat(prev1_lub)
+none1_w1 <- asin.dat(prev1_w1)
+none1_w2 <- asin.dat(prev1_w2)
+none1_hb <- asin.dat(prev1_hb)
+none1_jin <- asin.dat(prev1_jin)
+none1_schep <- asin.dat(prev1_schep)
+#none1_ws <- asin.dat(prev1_ws)
+none1_aho <- asin.dat(prev1_aho)
+
+asin_list <- list('raHb','raSchep','raW1','raW2', 'raAho', "raJin", "raLub")
+asin_list <- list(none1_hb,  none1_schep,none1_w1, none1_w2, none1_aho, none1_jin, none1_lub)
+asin_feats <- list()
+for (i in 1:length(asin_list)) {
+  
+      asin_feats[[length(asin_feats)+1]] <- colnames(asin_list[[i]])
+  }
+unique_feats_asin_ <<- unlist(asin_feats) %>% unique()
+res_asin <- order_outer_list(asin_list, unique_feats_asin_)
+res_asin
+
+# 02 --> 332,148,464,333,266,110,575
+# 01 --> 332,148,465,333,266,128,575
+# 0 --> 332,148,465,333,266,128,575
+```
+
+
+
+```{r, warning=FALSE}
+none1_lub <- none.dat(prev1_lub)
+none1_w1 <- none.dat(prev1_w1)
+none1_w2 <- none.dat(prev1_w2)
+none1_hb <- none.dat(prev1_hb)
+none1_jin <- none.dat(prev1_jin)
+none1_schep <- none.dat(prev1_schep)
+#none1_ws <- none.dat(prev1_ws)
+none1_aho <- none.dat(prev1_aho)
+
+none_list <- list('raHb','raSchep','raW1','raW2', 'raAho', "raJin", "raLub")
+none_list <- list(none1_hb,  none1_schep,none1_w1, none1_w2, none1_aho, none1_jin, none1_lub)
+none_feats <- list()
+for (i in 1:length(none_list)) {
+  
+      none_feats [[length(none_feats )+1]] <- colnames(none_list[[i]])
+  }
+none_unique_feats <<- unlist(none_feats) %>% unique()
+res_none <- order_outer_list(none_list, none_unique_feats)
+
+```
+
+
+
+
+
+
+```{r}
+library(openxlsx)
+#'raHb','raSchep','raW1','raW2', 'raAho', "raJin", "raLub"
+# USA FIN USA USA FIN CHN AUS
+
+big_df <-bind_rows(res_none)
+phy_col <- big_df[nrow(big_df),]
+tdf <- data.frame(t(big_df))
+cols_to_remove <- grep("Phylum", colnames(tdf))
+
+#use subset to remove the columns identified by grep
+tdf <- subset(tdf, select = -cols_to_remove) 
+tdf2 <- data.frame(t(tdf))
+tdf2[(nrow(tdf2)+1),]<- phy_col
+tdf2[2000:2295,]
+
+bigdf2 <- tdf2
+
+colnames_vector <- colnames(bigdf2)
+
+# Split the column names by underscore and keep the second element of each split
+#names_vector <- sapply(strsplit(colnames_vector, "_"), '[', 2)
+#bigdf2[nrow(bigdf2)+1,] <- names_vector
+
+
+values_vector <- c("USA", "FIN", "USA", "USA", "FIN", "CHN", "AUS")  # Replace with your values
+
+# Repeat each value based on the number of rows in the corresponding dataframe
+repeated_values <- unlist(sapply(1:length(res_none), function(i) rep(values_vector[i], nrow(res_none[[i]])-1)))
+
+y_col_index <- which(colnames(bigdf2) == "y")
+
+# Rearrange the columns with "Y" at the end
+bigdf2 <- bigdf2[, c(setdiff(1:ncol(bigdf2), y_col_index), y_col_index)]
+
+bigdf2[,ncol(bigdf2)] <- paste(bigdf2[,ncol(bigdf2)],repeated_values, sep=' ')
+write.csv(bigdf2, file.path('species_relab0.csv'))
+
+
+# write.csv2(phy_df, file.path('.//data//outer', 'bigclr.csv'),row.names=T )
+```
+
+
+
+```{r}
+library(CPOP)
+testd <- bigdf2 %>% dplyr::select(-y)
+pairwise_df <-  as.data.frame(lapply(testd , as.numeric))
+pairwise_df <- pairwise_col_diff(pairwise_df)
+pairwise_df$y <- bigdf2$y
+new_col_name <- sub(".*\\.", "", names(pairwise_df ))
+
+# Rename the column
+names(pairwise_df ) <- new_col_name
+rownames(pairwise_df) <- rownames(bigdf2)
+nrow(pairwise_df)
+write.csv(pairwise_df, file.path("weils_asin2_pairwise.csv"))
+```
+```{r}
+any(is.na(pairwise_df))
+```
+
+```{r}
+#rnames1 <- rownames(bigdf2)
+#rnames23 <- rownames(bigdf2)
+rnames0 < - rownames(bigdf2)
+```
+
+```{r}
+setdiff(rnames1, rnames23)
+setdiff(rnames23, rnames1)
+```
+
+
+```{r}
+# lub_test <- res_outer[[7]]
+# write.xlsx(lub_test, file.path('.//data//outer', 'lub.xlsx'),rowNames=T, decimals = ".")
+# jin_test <- res_outer[[6]]
+# write.xlsx(jin_test, file.path('.//data//outer', 'jin.xlsx'),rowNames=T, decimals = ".")
+```
+
+
+```{r}
+bigdf2[which(is.na(bigdf2)),]
+# library(dplyr)
+# for (i in 1:length(ranames_list)){
+#   res_outer[[i]]$dataset <- ranames_list[[i]]
+#   res_outer[[i]] <- res_outer[[i]] %>% mutate(dataset = recode(dataset,
+#                     "raLub" = 'AUS',
+#                     "raW2"= 'USA',
+#                     "raW1"= 'USA',
+#                     "raHb"= 'USA',
+#                     'raSchep'= 'FIN',
+#                     'raJin'= 'CHN',
+#                     'raAho'='FIN',
+#                     ))
+#   res_outer[[i]]$y <- paste(res_outer[[i]]$y, res_outer[[i]]$dataset)
+#   res_outer[[i]] <- res_outer[[i]] %>% dplyr::select(-dataset)
+# }
+ 
+```
+
+
