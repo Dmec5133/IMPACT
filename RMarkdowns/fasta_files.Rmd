@@ -1,0 +1,58 @@
+---
+title: "fasta_files"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+author: "Daniel Mechtersheimer"
+institute: "The University of Sydney"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    self_contained: true
+    code_folding: hide
+---
+
+```{r}
+library(PD16Sdata)
+library(tigger)
+library(Biostrings)
+lubom = ps_list$Lubomski
+aho = ps_list$Aho
+schep = ps_list$Scheperjans
+wal1 = ps_list$Wallen1
+wal2 = ps_list$Wallen2
+hb = ps_list$`Hill-Burns`
+jin = ps_list$Jin
+weils = ps_list$Weils
+```
+
+
+```{r}
+lubom_tax = taxa_names(lubom)
+aho_tax = taxa_names(aho)
+schep_tax = taxa_names(schep)
+wal1_tax = taxa_names(wal1)
+wal2_tax = taxa_names(wal2)
+hb_tax = taxa_names(hb)
+jin_tax = taxa_names(jin)
+```
+
+```{r}
+tax_ls = list(a = lubom_tax,
+              b = aho_tax,
+              c = schep_tax,
+              d = wal1_tax,
+              e = wal2_tax,
+              f = hb_tax,
+              g = jin_tax)
+tax = Reduce(union, tax_ls)
+```
+
+```{r}
+tax_name = paste(rep("OTU", length(tax)), 1:length(tax), sep = "")
+names(tax) = tax_name
+tax_fasta = DNAStringSet(tax)
+writeFasta(tax_fasta, "all_dsets.fasta")
+```
+
+
+

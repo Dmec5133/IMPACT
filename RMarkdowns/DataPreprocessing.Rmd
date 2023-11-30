@@ -1,0 +1,154 @@
+---
+title: "DataPreprocessing"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+author: "Daniel Mechtersheimer"
+institute: "The University of Sydney"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    self_contained: true
+    code_folding: hide
+---
+
+
+```{r, echo=FALSE, warning=F, message=FALSE}
+suppressWarnings({suppressMessages({
+library(phyloseq)
+library(PD16Sdata)
+library(tidyverse)
+library(stringr)})}
+)
+options(scipen = 999, digits=2)
+```
+
+
+```{r}
+source("scripts.R")
+```
+
+```{r}
+seq_spec <- read.csv("Species_Sequence.csv", row.names=1)
+
+lub_species <- add_species(seq_spec, ps_list$Lubomski)
+w1_species <- add_species(seq_spec, ps_list$Wallen1)
+w2_species <- add_species(seq_spec, ps_list$Wallen2)
+jin_species <- add_species(seq_spec, ps_list$Jin)
+schep_species <- add_species(seq_spec, ps_list$Scheperjans)
+aho_species <- add_species(seq_spec, ps_list$Aho)
+hb_species <- add_species(seq_spec, ps_list$`Hill-Burns`)
+ws_species <- add_species(seq_spec, ps_list$Weils)
+```
+
+
+```{r, warning=FALSE}
+#Choose abundance threshold and taxonomic level 
+prev1_lub <- prev.fam2(lub_species,0.0, 'Species')
+#wal1
+prev1_w1 <- prev.fam2(w1_species,0.0, 'Species')
+#wal2q
+prev1_w2 <- prev.fam2(w2_species,0.0, 'Species')
+#hb
+prev1_hb <- prev.fam2(hb_species ,0.0, 'Species')
+#jin
+prev1_jin <- prev.fam2(jin_species,0.0, 'Species')
+#schep
+prev1_schep <- prev.fam2(schep_species,0.0, 'Species')
+#aho
+prev1_aho <- prev.fam2(aho_species,0.0, 'Species')
+
+
+```
+
+
+
+
+```{r, warning=FALSE}
+library(openxlsx)
+none1_lub <- asin.dat(prev1_lub)
+none1_w1 <- asin.dat(prev1_w1)
+none1_w2 <- asin.dat(prev1_w2)
+none1_hb <- asin.dat(prev1_hb)
+none1_jin <- asin.dat(prev1_jin)
+none1_schep <- asin.dat(prev1_schep)
+
+none1_aho <- asin.dat(prev1_aho)
+
+asin_list <- list('raHb','raSchep','raW1','raW2', 'raAho', "raJin", "raLub")
+asin_list <- list(none1_hb,  none1_schep,none1_w1, none1_w2, none1_aho, none1_jin, none1_lub)
+asin_feats <- list()
+for (i in 1:length(asin_list)) {
+  
+      asin_feats[[length(asin_feats)+1]] <- colnames(asin_list[[i]])
+  }
+unique_feats_asin_ <<- unlist(asin_feats) %>% unique()
+res_asin <- order_outer_list(asin_list, unique_feats_asin_)
+
+```
+
+
+
+```{r, warning=FALSE}
+none1_lub <- none.dat(prev1_lub)
+none1_w1 <- none.dat(prev1_w1)
+none1_w2 <- none.dat(prev1_w2)
+none1_hb <- none.dat(prev1_hb)
+none1_jin <- none.dat(prev1_jin)
+none1_schep <- none.dat(prev1_schep)
+#none1_ws <- none.dat(prev1_ws)
+none1_aho <- none.dat(prev1_aho)
+
+none_list <- list('raHb','raSchep','raW1','raW2', 'raAho', "raJin", "raLub")
+none_list <- list(none1_hb,  none1_schep,none1_w1, none1_w2, none1_aho, none1_jin, none1_lub)
+none_feats <- list()
+for (i in 1:length(none_list)) {
+  
+      none_feats [[length(none_feats )+1]] <- colnames(none_list[[i]])
+  }
+none_unique_feats <<- unlist(none_feats) %>% unique()
+res_none <- order_outer_list(none_list, none_unique_feats)
+
+```
+
+
+
+
+
+
+```{r}
+library(openxlsx)
+
+big_df <-bind_rows(res_none)
+phy_col <- big_df[nrow(big_df),]
+tdf <- data.frame(t(big_df))
+cols_to_remove <- grep("Phylum", colnames(tdf))
+
+#use subset to remove the columns identified by grep
+tdf <- subset(tdf, select = -cols_to_remove) 
+tdf2 <- data.frame(t(tdf))
+tdf2[(nrow(tdf2)+1),]<- phy_col
+tdf2[2000:2295,]
+
+bigdf2 <- tdf2
+
+colnames_vector <- colnames(bigdf2)
+
+values_vector <- c("USA", "FIN", "USA", "USA", "FIN", "CHN", "AUS")  # Replace with your values
+
+# Repeat each value based on the number of rows in the corresponding dataframe
+repeated_values <- unlist(sapply(1:length(res_none), function(i) rep(values_vector[i], nrow(res_none[[i]])-1)))
+
+y_col_index <- which(colnames(bigdf2) == "y")
+
+# Rearrange the columns with "Y" at the end
+bigdf2 <- bigdf2[, c(setdiff(1:ncol(bigdf2), y_col_index), y_col_index)]
+
+bigdf2[,ncol(bigdf2)] <- paste(bigdf2[,ncol(bigdf2)],repeated_values, sep=' ')
+
+write.csv(bigdf2, file.path('abundance_alldsets.csv'))
+
+```
+
+
+
+
