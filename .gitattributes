@@ -1,2 +1,4 @@
 # Auto detect text files and perform LF normalization
 * text=auto
+DeePLaST.zip filter=lfs diff=lfs merge=lfs -text
+GeneralizableMicrobiomeModel.zip filter=lfs diff=lfs merge=lfs -text
